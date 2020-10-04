@@ -64,7 +64,7 @@ RsheetTable <- R6Class("RsheetTable",
                          addToWorkbook = function(workbook, ...){
                            super$addToWorkbook(workbook, ...)
                            writeDataTable(wb = workbook, sheet = self$sheetName, self$data,
-                                          colNames = self$colNames, rowNames = self$colNames, ...)
+                                          colNames = self$colNames, rowNames = self$rowNames, ...)
                            if (!identical(self$columns, NA)) {
                              setColWidths(wb = workbook ,sheet = self$sheetName,
                                           cols = self$columns, widths = self$widths,...)
