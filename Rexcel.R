@@ -3,7 +3,7 @@ library(R6)
 
 # base object
 
-Rsheet = "Rsheet"
+RsheetClass = "Rsheet"
 
 Rsheet <- R6Class("Rsheet",
                   private = list(
