@@ -40,7 +40,7 @@ Rsheet <- R6Class("Rsheet",
 
 # ----
 
-RsheetClassTable = "RsheetTable"
+RsheetTableClass = "RsheetTable"
 
 RsheetTable <- R6Class("RsheetTable",
                        inherit = Rsheet,
