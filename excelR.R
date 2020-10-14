@@ -29,13 +29,13 @@ Rsheet <- R6Class("Rsheet",
                   ),
                   active = list(
                     data = function(value){
-                    if (missing(value)){
-                      return(private$dataSheet)
-                    } else {
-                      private$dataSheet <- value
+                      if (missing(value)){
+                        return(private$dataSheet)
+                      } else {
+                        private$dataSheet <- value
+                      }
                     }
-                  }
-               )
+                  )
 )
 
 # ----
@@ -50,20 +50,26 @@ RsheetTable <- R6Class("RsheetTable",
                          colNames = TRUE,
                          columns = NA,
                          widths = NA,
+                         sheet.startRow = 1,
+                         sheet.startCol = 1,
                          initialize = function(sheetData = NA,
                                                name = "", rNames = FALSE, cNames = TRUE,
-                                               columns = NA, widths = NA){
+                                               columns = NA, widths = NA,
+                                               startRow = 1, startCol = 1, ...){
                            self$data <- sheetData
                            self$sheetName <- name
                            self$colNames <- cNames
                            self$rowNames <- rNames
                            self$columns <- columns
                            self$widths <- widths
+                           self$sheet.startRow <- startRow
+                           self$sheet.startCol <- startCol
                            invisible(self)
                          },
                          addToWorkbook = function(workbook, ...){
                            super$addToWorkbook(workbook, ...)
                            writeDataTable(wb = workbook, sheet = self$sheetName, self$data,
+                                          startCol = self$sheet.startCol, startRow = self$sheet.startRow,
                                           colNames = self$colNames, rowNames = self$rowNames, ...)
                            if (!identical(self$columns, NA)) {
                              setColWidths(wb = workbook ,sheet = self$sheetName,
@@ -127,80 +133,80 @@ RsheetImage <- R6Class("RsheetImage",
 RxcelClass = "Rxcel"
 
 Rxcel <- R6Class("Rxcel",
-                  private = list(
-                    nameOfFile = as.character(NA),
-                    extension = ".xlsx",
-                    xcelSheets = NA
-                  ),
-                  public = list(
-                    initialize = function(nameFile = as.character(NA)){
-                      self$fileName <- nameFile
-                      invisible(self)
-                    },
-                    addSheet = function(sheetData = NA, ...){
-                      if (RsheetClass %in% class(sheetData)){
-                        if (self$length == 0){
-                          self$excelSheets <- list(sheetData)
-                        } else {
-                          self$excelSheets <- append(self$excelSheets,sheetData)
-                        }
-                        recentSheet <- self$length # sheet that was just added
-                        if (private$xcelSheets[[recentSheet]]$sheetName == ""){
-                          private$xcelSheets[[recentSheet]]$sheetName <- paste("sheet",toString(recentSheet),sep = "_")
-                        }
-                      }
-                      invisible(self)
-                    },
-                    createExcel = function(...){
-                      tempExcel <- createWorkbook(self$fileName)
-                      for (counter in 1:(self$length)){
-                        private$xcelSheets[[counter]]$addToWorkbook(tempExcel, ...)
-                      }
-                      return(tempExcel)
-                    },
-                    writeExcel = function(overwrite = FALSE, ...){
-                      tempExcel <- self$createExcel(...)
-                      saveWorkbook(wb = tempExcel,
-                                   file = paste(self$fileName, self$fileExtension, sep = ""),
-                                   overwrite = overwrite)
-                      # note: only remove file when asked (after save workbook)
-                      for (counter in 1:(self$length)){
-                        private$xcelSheets[[counter]]$removeData()
-                      }
-                    }
-                  ),
-                  active = list(
-                    fileName = function(value){
-                      if (missing(value)){
-                        return(private$nameOfFile)
-                      } else {
-                        private$nameOfFile <- value
-                      }
-                    },
-                    fileExtension = function(value){
-                      if (missing(value)){
-                        return(private$extension)
-                      } else {
-                        private$extension <- value
-                      }
-                    },
-                    length = function(value){
-                      if (missing(value)){
-                        if (identical(private$xcelSheets,NA)){
-                          return(0)
-                        } else {
-                          return(length(private$xcelSheets))
-                        }
-                      } else {
-                        # do nothing, cannot set
-                      }
-                    },
-                    excelSheets = function(value){
-                      if (missing(value)){
-                        return(private$xcelSheets)
-                      } else {
-                        private$xcelSheets <- value
-                      }
-                    }
-                  )
+                 private = list(
+                   nameOfFile = as.character(NA),
+                   extension = ".xlsx",
+                   xcelSheets = NA
+                 ),
+                 public = list(
+                   initialize = function(nameFile = as.character(NA)){
+                     self$fileName <- nameFile
+                     invisible(self)
+                   },
+                   addSheet = function(sheetData = NA, ...){
+                     if (RsheetClass %in% class(sheetData)){
+                       if (self$length == 0){
+                         self$excelSheets <- list(sheetData)
+                       } else {
+                         self$excelSheets <- append(self$excelSheets,sheetData)
+                       }
+                       recentSheet <- self$length # sheet that was just added
+                       if (private$xcelSheets[[recentSheet]]$sheetName == ""){
+                         private$xcelSheets[[recentSheet]]$sheetName <- paste("sheet",toString(recentSheet),sep = "_")
+                       }
+                     }
+                     invisible(self)
+                   },
+                   createExcel = function(...){
+                     tempExcel <- createWorkbook(self$fileName)
+                     for (counter in 1:(self$length)){
+                       private$xcelSheets[[counter]]$addToWorkbook(tempExcel, ...)
+                     }
+                     return(tempExcel)
+                   },
+                   writeExcel = function(overwrite = FALSE, ...){
+                     tempExcel <- self$createExcel(...)
+                     saveWorkbook(wb = tempExcel,
+                                  file = paste(self$fileName, self$fileExtension, sep = ""),
+                                  overwrite = overwrite)
+                     # note: only remove file when asked (after save workbook)
+                     for (counter in 1:(self$length)){
+                       private$xcelSheets[[counter]]$removeData()
+                     }
+                   }
+                 ),
+                 active = list(
+                   fileName = function(value){
+                     if (missing(value)){
+                       return(private$nameOfFile)
+                     } else {
+                       private$nameOfFile <- value
+                     }
+                   },
+                   fileExtension = function(value){
+                     if (missing(value)){
+                       return(private$extension)
+                     } else {
+                       private$extension <- value
+                     }
+                   },
+                   length = function(value){
+                     if (missing(value)){
+                       if (identical(private$xcelSheets,NA)){
+                         return(0)
+                       } else {
+                         return(length(private$xcelSheets))
+                       }
+                     } else {
+                       # do nothing, cannot set
+                     }
+                   },
+                   excelSheets = function(value){
+                     if (missing(value)){
+                       return(private$xcelSheets)
+                     } else {
+                       private$xcelSheets <- value
+                     }
+                   }
+                 )
 )
