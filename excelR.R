@@ -131,94 +131,94 @@ RsheetImage <- R6Class("RsheetImage",
 # -----
 
 # to put more than one table/image in a single sheet of an excel file
-RsheetMultiTableClass = "RsheetMultiTable"
+RsheetMultiClass = "RsheetMulti"
 
-RsheetMultiTable <- R6Class("RsheetMultiTable",
-                            inherit = Rsheet,
-                            public = list(
-                              columns = NA,
-                              widths = NA,
-                              initialize = function(nameSheet = "", columns = NA, widths = NA, ...){
-                                super$initialize(sheetData = list(), nameSheet = nameSheet, ...)
-                                self$setColumnWidths(columns = columns, widths = widths)
-                                invisible(self)
-                              },
-                              setColumnWidths = function(columns = NA, widths = NA){
-                                # only for whole sheet, not defined per table
-                                self$columns = columns
-                                self$widths = widths
-                                invisible(self)
-                              },
-                              addTable = function(tableData, rNames = FALSE, cNames = TRUE,
-                                                  startRow = 1, startCol = 1, ...){
-                                item = list(type = "table", rowNames = rNames, colNames = cNames,
-                                            sheet.startRow = startRow, sheet.startCol = startCol,
-                                            data = list(tableData))
-                                private$dataSheet[[self$numberOfElements+1]] <- item
-                                invisible(self)
-                              },
-                              addImage = function(figureFileName = "", removeFile = FALSE,
-                                                  width = 12, height = 8, dpi = 600, units = "in",
-                                                  startRow = 1, startCol = 1, ...){
-                                item = list(type = "image",
-                                            figureFileName = figureFileName,
-                                            removeFile = removeFile,
-                                            picture.width = width, picture.height = height,
-                                            picture.dpi = dpi, picture.units = units,
-                                            sheet.startRow = startRow, sheet.startCol = startCol)
-                                private$dataSheet[[self$numberOfElements+1]] <- item
-                                invisible(self)
-                              },
-                              addToWorkbook = function(workbook, ...){
-                                super$addToWorkbook(workbook, ...)
-                                for (counter in 1:self$numberOfElements){
-                                  if (private$dataSheet[[counter]]$type == "image"){
-                                    insertImage(wb = workbook, sheet = self$sheetName,
-                                                file = private$dataSheet[[counter]]$figureFileName,
-                                                width = private$dataSheet[[counter]]$picture.width,
-                                                height = private$dataSheet[[counter]]$picture.height,
-                                                startRow = private$dataSheet[[counter]]$sheet.startRow,
+RsheetMulti <- R6Class("RsheetMulti",
+                       inherit = Rsheet,
+                       public = list(
+                         columns = NA,
+                         widths = NA,
+                         initialize = function(nameSheet = "", columns = NA, widths = NA, ...){
+                           super$initialize(sheetData = list(), nameSheet = nameSheet, ...)
+                           self$setColumnWidths(columns = columns, widths = widths)
+                           invisible(self)
+                         },
+                         setColumnWidths = function(columns = NA, widths = NA){
+                           # only for whole sheet, not defined per table
+                           self$columns = columns
+                           self$widths = widths
+                           invisible(self)
+                         },
+                         addTable = function(tableData, rNames = FALSE, cNames = TRUE,
+                                             startRow = 1, startCol = 1, ...){
+                           item = list(type = "table", rowNames = rNames, colNames = cNames,
+                                       sheet.startRow = startRow, sheet.startCol = startCol,
+                                       data = list(tableData))
+                           private$dataSheet[[self$numberOfElements+1]] <- item
+                           invisible(self)
+                         },
+                         addImage = function(figureFileName = "", removeFile = FALSE,
+                                             width = 12, height = 8, dpi = 600, units = "in",
+                                             startRow = 1, startCol = 1, ...){
+                           item = list(type = "image",
+                                       figureFileName = figureFileName,
+                                       removeFile = removeFile,
+                                       picture.width = width, picture.height = height,
+                                       picture.dpi = dpi, picture.units = units,
+                                       sheet.startRow = startRow, sheet.startCol = startCol)
+                           private$dataSheet[[self$numberOfElements+1]] <- item
+                           invisible(self)
+                         },
+                         addToWorkbook = function(workbook, ...){
+                           super$addToWorkbook(workbook, ...)
+                           for (counter in 1:self$numberOfElements){
+                             if (private$dataSheet[[counter]]$type == "image"){
+                               insertImage(wb = workbook, sheet = self$sheetName,
+                                           file = private$dataSheet[[counter]]$figureFileName,
+                                           width = private$dataSheet[[counter]]$picture.width,
+                                           height = private$dataSheet[[counter]]$picture.height,
+                                           startRow = private$dataSheet[[counter]]$sheet.startRow,
+                                           startCol = private$dataSheet[[counter]]$sheet.startCol,
+                                           units = private$dataSheet[[counter]]$picture.units,
+                                           dpi = private$dataSheet[[counter]]$picture.dpi, ...)
+                             } else {
+                               if (private$dataSheet[[counter]]$type == "table"){
+                                 writeDataTable(wb = workbook, sheet = self$sheetName,
+                                                private$dataSheet[[counter]]$data[[1]],
                                                 startCol = private$dataSheet[[counter]]$sheet.startCol,
-                                                units = private$dataSheet[[counter]]$picture.units,
-                                                dpi = private$dataSheet[[counter]]$picture.dpi, ...)
-                                  } else {
-                                    if (private$dataSheet[[counter]]$type == "table"){
-                                      writeDataTable(wb = workbook, sheet = self$sheetName,
-                                                     private$dataSheet[[counter]]$data[[1]],
-                                                     startCol = private$dataSheet[[counter]]$sheet.startCol,
-                                                     startRow = private$dataSheet[[counter]]$sheet.startRow,
-                                                     colNames = private$dataSheet[[counter]]$colNames,
-                                                     rowNames = private$dataSheet[[counter]]$rowNames, ...)
-                                    }
-                                  }
-                                }
-                                if (!identical(self$columns, NA)) {   # only for whole sheet, not for individual tables
-                                  setColWidths(wb = workbook ,sheet = self$sheetName,
-                                               cols = self$columns, widths = self$widths,...)
-                                  
-                                }
-                                invisible(self)
-                              },
-                              removeData = function(...){  # note: only remove image files when asked (after save workbook)
-                                for (counter in 1:self$numberOfElements){
-                                  if (private$dataSheet[[counter]]$type == "image"){                     # only images
-                                    if (private$dataSheet[[counter]]$removeFile){
-                                      nothingVariable <- file.remove(private$dataSheet[[counter]]$figureFileName)  # only when removeFile == TRUE for that image
-                                    }
-                                  }
-                                }
-                                invisible(self)
-                              }
-                            ),
-                            active = list(
-                              numberOfElements = function(value){
-                                if (missing(value)){
-                                  return(length(private$dataSheet))
-                                } else {
-                                  # do nothing
-                                }
-                              }
-                            )
+                                                startRow = private$dataSheet[[counter]]$sheet.startRow,
+                                                colNames = private$dataSheet[[counter]]$colNames,
+                                                rowNames = private$dataSheet[[counter]]$rowNames, ...)
+                               }
+                             }
+                           }
+                           if (!identical(self$columns, NA)) {   # only for whole sheet, not for individual tables
+                             setColWidths(wb = workbook ,sheet = self$sheetName,
+                                          cols = self$columns, widths = self$widths,...)
+                             
+                           }
+                           invisible(self)
+                         },
+                         removeData = function(...){  # note: only remove image files when asked (after save workbook)
+                           for (counter in 1:self$numberOfElements){
+                             if (private$dataSheet[[counter]]$type == "image"){                     # only images
+                               if (private$dataSheet[[counter]]$removeFile){
+                                 nothingVariable <- file.remove(private$dataSheet[[counter]]$figureFileName)  # only when removeFile == TRUE for that image
+                               }
+                             }
+                           }
+                           invisible(self)
+                         }
+                      ),
+                      active = list(
+                        numberOfElements = function(value){
+                          if (missing(value)){
+                            return(length(private$dataSheet))
+                          } else {
+                            # do nothing
+                          }
+                        }
+                      )
 )
 
 # -----
