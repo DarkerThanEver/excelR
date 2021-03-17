@@ -1,4 +1,4 @@
-# excelR
+# excel-R
 
 A simple set of 'wrapper' routines to streamline putting data & figures from R into excel files
 
