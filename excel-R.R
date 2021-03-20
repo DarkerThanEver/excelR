@@ -7,18 +7,18 @@ RsheetClass = "Rsheet"
 
 Rsheet <- R6Class("Rsheet",
                   private = list(
-                    dataSheet = NA
+                    dataSheet = NA,
+                    nameSheet = ""
                   ),
                   public = list(
-                    sheetName = "",
                     initialize = function(sheetData = NA, nameSheet = "", ...){
                       self$data <- sheetData
-                      self$sheetName <- nameSheet
+                      self$name <- nameSheet
                       invisible(self)
                     },
                     addToWorkbook = function(workbook, ...){
-                      if (!(self$sheetName %in% workbook$sheet_names)) {
-                        addWorksheet(workbook,self$sheetName)
+                      if (!(self$name %in% workbook$sheet_names)) {
+                        addWorksheet(workbook,self$name)
                       }
                       invisible(self)
                     },
@@ -34,6 +34,13 @@ Rsheet <- R6Class("Rsheet",
                       } else {
                         private$dataSheet <- value
                       }
+                    },
+                    name = function(value){
+                      if (missing(value)){
+                        return(private$nameSheet)
+                      } else {
+                        private$nameSheet <- value
+                      }
                     }
                   )
 )
@@ -45,7 +52,6 @@ RsheetTableClass = "RsheetTable"
 RsheetTable <- R6Class("RsheetTable",
                        inherit = Rsheet,
                        public = list(
-                         sheetName = "",
                          rowNames = FALSE,
                          colNames = TRUE,
                          columns = NA,
@@ -53,11 +59,11 @@ RsheetTable <- R6Class("RsheetTable",
                          sheet.startRow = 1,
                          sheet.startCol = 1,
                          initialize = function(sheetData = NA,
-                                               name = "", rNames = FALSE, cNames = TRUE,
+                                               nameSheet = "", rNames = FALSE, cNames = TRUE,
                                                columns = NA, widths = NA,
                                                startRow = 1, startCol = 1, ...){
                            self$data <- sheetData
-                           self$sheetName <- name
+                           self$name <- nameSheet
                            self$colNames <- cNames    # set column names before putting table into this object
                            self$rowNames <- rNames
                            self$columns <- columns    # numeric indices
@@ -68,11 +74,11 @@ RsheetTable <- R6Class("RsheetTable",
                          },
                          addToWorkbook = function(workbook, ...){
                            super$addToWorkbook(workbook, ...)
-                           writeDataTable(wb = workbook, sheet = self$sheetName, self$data,
+                           writeDataTable(wb = workbook, sheet = self$name, self$data,
                                           startCol = self$sheet.startCol, startRow = self$sheet.startRow,
                                           colNames = self$colNames, rowNames = self$rowNames, ...)
                            if (!identical(self$columns, NA)) {
-                             setColWidths(wb = workbook ,sheet = self$sheetName,
+                             setColWidths(wb = workbook ,sheet = self$name,
                                           cols = self$columns, widths = self$widths,...)
                            }
                          }
@@ -98,10 +104,17 @@ RsheetImage <- R6Class("RsheetImage",
                          picture.units = "in",
                          sheet.startRow = 1,
                          sheet.startCol = 1,
-                         initialize = function(figureFileName = "", nameSheet = "",
+                         initialize = function(figureFileName = tempfile(),
+                                               nameSheet = "",
                                                removeFile = FALSE,
                                                width = 12, height = 8, dpi = 600, units = "in",
-                                               startRow = 1, startCol = 1, ...){
+                                               startRow = 1, startCol = 1,
+                                               ggplot2Figure = NA, device = "jpeg", scale = 1, ...){
+                           if (!identical(ggplot2Figure,NA)){
+                             ggsave(figureFileName, plot = ggplot2Figure, device = device,
+                                    scale = scale, width = width, height = height, units = units,
+                                    dpi = dpi)
+                           }
                            super$initialize(sheetData = figureFileName, nameSheet = nameSheet, ...)
                            self$removeTheFile = removeFile
                            self$picture.width = width
@@ -113,7 +126,7 @@ RsheetImage <- R6Class("RsheetImage",
                          },
                          addToWorkbook = function(workbook, ...){
                            super$addToWorkbook(workbook, ...)
-                           insertImage(wb = workbook, sheet = self$sheetName, file = self$data,
+                           insertImage(wb = workbook, sheet = self$name, file = self$data,
                                        width = self$picture.width, height = self$picture.height,
                                        startRow = self$sheet.startRow, startCol = self$sheet.startCol,
                                        units = self$picture.units, dpi = self$picture.dpi)
@@ -173,7 +186,7 @@ RsheetMulti <- R6Class("RsheetMulti",
                            super$addToWorkbook(workbook, ...)
                            for (counter in 1:self$numberOfElements){
                              if (private$dataSheet[[counter]]$type == "image"){
-                               insertImage(wb = workbook, sheet = self$sheetName,
+                               insertImage(wb = workbook, sheet = self$name,
                                            file = private$dataSheet[[counter]]$figureFileName,
                                            width = private$dataSheet[[counter]]$picture.width,
                                            height = private$dataSheet[[counter]]$picture.height,
@@ -183,7 +196,7 @@ RsheetMulti <- R6Class("RsheetMulti",
                                            dpi = private$dataSheet[[counter]]$picture.dpi, ...)
                              } else {
                                if (private$dataSheet[[counter]]$type == "table"){
-                                 writeDataTable(wb = workbook, sheet = self$sheetName,
+                                 writeDataTable(wb = workbook, sheet = self$name,
                                                 private$dataSheet[[counter]]$data[[1]],
                                                 startCol = private$dataSheet[[counter]]$sheet.startCol,
                                                 startRow = private$dataSheet[[counter]]$sheet.startRow,
@@ -193,7 +206,7 @@ RsheetMulti <- R6Class("RsheetMulti",
                              }
                            }
                            if (!identical(self$columns, NA)) {   # only for whole sheet, not for individual tables
-                             setColWidths(wb = workbook ,sheet = self$sheetName,
+                             setColWidths(wb = workbook ,sheet = self$name,
                                           cols = self$columns, widths = self$widths,...)
                              
                            }
@@ -244,8 +257,8 @@ Rxcel <- R6Class("Rxcel",
                          self$excelSheets <- append(self$excelSheets,sheetData)
                        }
                        recentSheet <- self$length # sheet that was just added
-                       if (private$xcelSheets[[recentSheet]]$sheetName == ""){
-                         private$xcelSheets[[recentSheet]]$sheetName <- paste("sheet",toString(recentSheet),sep = "_")
+                       if (private$xcelSheets[[recentSheet]]$name == ""){
+                         private$xcelSheets[[recentSheet]]$name <- paste("sheet",toString(recentSheet),sep = "_")
                        }
                      }
                      invisible(self)
